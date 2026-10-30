@@ -1,0 +1,74 @@
+﻿序号,科目编码,科目名称,上级科目,是否分组(1=是0=末级),根类型(Root Type),科目类型(Account Type),账户类别(Account Category),备注
+1,1001,库存现金,-,0,Asset,Cash,Cash and Cash Equivalents,末级科目
+2,1002,银行存款,-,0,Asset,Bank,Cash and Cash Equivalents,末级科目
+3,1012,其他货币资金,-,0,Asset,Cash,Cash and Cash Equivalents,末级科目
+4,1101,交易性金融资产,-,0,Asset,Current Asset,,末级科目
+5,1121,应收票据,-,0,Asset,Current Asset,Other Receivables,末级科目
+6,1122,应收账款,-,0,Asset,Receivable,Trade Receivables,必设Receivable否则无法记账
+7,1123,预付账款,-,0,Asset,Current Asset,Other Current Assets,末级科目
+8,1131,应收股利,-,0,Asset,Current Asset,,末级科目
+9,1132,应收利息,-,0,Asset,Current Asset,,末级科目
+10,1221,其他应收款,-,0,Asset,Current Asset,Other Receivables,末级科目
+11,1231,坏账准备,-,0,Asset,Current Asset,,备抵科目
+12,1403,原材料,-,0,Asset,Stock,Stock Assets,必须设Stock
+13,1405,库存商品,-,0,Asset,Stock,Stock Assets,必须设Stock
+14,1408,委托加工物资,-,0,Asset,Stock,Stock Assets,必须设Stock
+15,1471,存货跌价准备,-,0,Asset,Stock,,备抵科目
+16,1601,固定资产,-,0,Asset,Fixed Asset,Fixed Assets,必须设Fixed Asset
+17,1602,累计折旧,-,0,Asset,Accumulated Depreciation,,必须设Accumulated Depreciation
+18,1603,固定资产减值准备,-,0,Asset,Current Asset,,备抵科目
+19,1604,在建工程,-,0,Asset,Capital Work in Progress,,末级科目
+20,1701,无形资产,-,0,Asset,Fixed Asset,,末级科目
+21,1702,累计摊销,-,0,Asset,Accumulated Depreciation,,备抵科目
+22,1801,长期待摊费用,-,0,Asset,Fixed Asset,,末级科目
+23,1811,递延所得税资产,-,0,Asset,Current Asset,,末级科目
+24,2001,短期借款,-,0,Liability,Current Liability,,末级科目
+25,2201,应付票据,-,0,Liability,Current Liability,Other Current Liabilities,末级科目
+26,2202,应付账款,-,0,Liability,Payable,Trade Payables,必设Payable否则无法记账
+27,2203,预收账款,-,0,Liability,Current Liability,Other Current Liabilities,末级科目
+28,2211,应付职工薪酬,-,0,Liability,Current Liability,,末级科目
+29,2221,应交税费,-,1,Liability,Tax,,分组科目（不设账户类别）
+30,222101,应交增值税,应交税费,1,Liability,Tax,,分组科目
+31,22210101,进项税额,应交增值税,0,Liability,Tax,,末级科目
+32,22210102,销项税额,应交增值税,0,Liability,Tax,,末级科目
+33,22210103,已交税金,应交增值税,0,Liability,Tax,,末级科目
+34,22210104,转出未交增值税,应交增值税,0,Liability,Tax,,末级科目
+35,222102,未交增值税,应交税费,0,Liability,Tax,,末级科目
+36,222103,应交所得税,应交税费,0,Liability,Tax,,末级科目
+37,222104,应交城市维护建设税,应交税费,0,Liability,Tax,,末级科目
+38,222105,应交教育费附加,应交税费,0,Liability,Tax,,末级科目
+39,222106,应交个人所得税,应交税费,0,Liability,Tax,,末级科目
+40,2231,应付利息,-,0,Liability,Current Liability,,末级科目
+41,2232,应付股利,-,0,Liability,Current Liability,,末级科目
+42,2241,其他应付款,-,0,Liability,Current Liability,Other Current Liabilities,末级科目
+43,2501,长期借款,-,0,Liability,Liability,,末级科目
+44,2801,预计负债,-,0,Liability,Liability,,末级科目
+45,2901,递延所得税负债,-,0,Liability,Liability,,末级科目
+46,4001,实收资本,-,0,Equity,Equity,,末级科目
+47,4002,资本公积,-,0,Equity,Equity,,末级科目
+48,4101,盈余公积,-,0,Equity,Equity,,末级科目
+49,4103,本年利润,-,0,Equity,Equity,,重要：切勿设置账户类别否则利润重复计算
+50,4104,利润分配,-,1,Equity,Equity,,分组科目
+51,410401,未分配利润,利润分配,0,Equity,Equity,,末级科目
+52,5001,生产成本,-,0,Expense,Expense Account,,成本类
+53,5101,制造费用,-,0,Expense,Expense Account,,成本类
+54,5201,劳务成本,-,0,Expense,Expense Account,,成本类
+55,5301,研发支出,-,1,Expense,Expense Account,,分组科目
+56,530101,费用化支出,研发支出,0,Expense,Expense Account,,对应研发费用化
+57,530102,资本化支出,研发支出,0,Expense,Expense Account,,对应研发资本化
+58,6001,主营业务收入,-,0,Income,Income Account,,末级科目
+59,6051,其他业务收入,-,0,Income,Income Account,,末级科目
+60,6111,投资收益,-,0,Income,Income Account,,末级科目
+61,6301,营业外收入,-,0,Income,Income Account,,末级科目
+62,6401,主营业务成本,-,0,Expense,Cost of Goods Sold,Cost of Goods Sold,必须设COGS否则利润表错误
+63,6402,其他业务成本,-,0,Expense,Cost of Goods Sold,,末级科目
+64,6403,税金及附加,-,0,Expense,Expense Account,,末级科目
+65,6601,销售费用,-,0,Expense,Expense Account,,末级科目
+66,6602,管理费用,-,0,Expense,Expense Account,,末级科目
+67,6603,财务费用,-,0,Expense,Expense Account,,末级科目
+68,6604,研发费用,-,0,Expense,Expense Account,,末级科目
+69,6701,资产减值损失,-,0,Expense,Expense Account,,末级科目
+70,6702,信用减值损失,-,0,Expense,Expense Account,,末级科目
+71,6711,营业外支出,-,0,Expense,Expense Account,,末级科目
+72,6801,所得税费用,-,0,Expense,Expense Account,,末级科目
+73,6901,以前年度损益调整,-,0,Expense,Expense Account,,末级科目

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "erpnext": {
+      "command": "npx",
+      "args": ["-y", "@casys/mcp-erpnext"],
+      "env": {
+        "ERPNEXT_URL": "http://localhost:8089",
+        "ERPNEXT_API_KEY": "把这里换成你的 API Key",
+        "ERPNEXT_API_SECRET": "把这里换成你的 API Secret"
+      }
+    }
+  }
+}

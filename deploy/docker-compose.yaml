@@ -1,0 +1,199 @@
+version: "3.8"
+
+networks:
+  erp-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-cache-data:
+  redis-queue-data:
+
+services:
+  # ---------- 数据库：PostgreSQL 14 (alpine) ----------
+  # 说明：镜像自带 psql 客户端为 15.x，服务端 14 已验证可用。
+  #       如需大版本一致，改 15-alpine，但仅可在数据卷为空时切换。
+  erp_postgres:
+    image: docker.io/postgres:14-alpine
+    container_name: erp_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5439:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - erp-net
+
+  # ---------- Redis 缓存 ----------
+  erp_redis_cache:
+    image: docker.io/redis:7-alpine
+    container_name: erp_redis_cache
+    restart: always
+    volumes:
+      - redis-cache-data:/data
+    networks:
+      - erp-net
+
+  # ---------- Redis 队列 ----------
+  erp_redis_queue:
+    image: docker.io/redis:7-alpine
+    container_name: erp_redis_queue
+    restart: always
+    volumes:
+      - redis-queue-data:/data
+    networks:
+      - erp-net
+
+  # ---------- ERPNext 后端（已打入 erpnext_china + pandas/numpy） ----------
+  erp_backend:
+    image: localhost/erpnext-cn:v15.32.0
+    container_name: erp_backend
+    restart: always
+    environment:
+      - DB_TYPE=postgres
+      - DB_HOST=erp_postgres
+      - DB_PORT=5432
+      - REDIS_CACHE=redis://erp_redis_cache:6379
+      - REDIS_QUEUE=redis://erp_redis_queue:6379
+    volumes:
+      - ./sites:/home/frappe/frappe-bench/sites
+      - ./apps.txt:/home/frappe/frappe-bench/apps.txt
+      - ./apps.txt:/home/frappe/frappe-bench/sites/apps.txt
+    networks:
+      - erp-net
+    depends_on:
+      - erp_postgres
+      - erp_redis_cache
+      - erp_redis_queue
+
+  # ---------- WebSocket ----------
+  erp_websocket:
+    image: localhost/erpnext-cn:v15.32.0
+    container_name: erp_websocket
+    restart: always
+    volumes:
+      - ./sites:/home/frappe/frappe-bench/sites
+      - ./apps.txt:/home/frappe/frappe-bench/apps.txt
+      - ./apps.txt:/home/frappe/frappe-bench/sites/apps.txt
+    networks:
+      - erp-net
+    depends_on:
+      - erp_backend
+
+  # ---------- Nginx 前端 ----------
+  erp_frontend:
+    image: localhost/erpnext-cn:v15.32.0
+    container_name: erp_frontend
+    restart: always
+    command: ["nginx-entrypoint.sh"]
+    ports:
+      - "8089:8080"
+    environment:
+      - BACKEND=erp_backend:8000
+      - SOCKETIO=erp_websocket:9000
+      - FRAPPE_SITE_NAME_HEADER=frontend
+      - CLIENT_MAX_BODY_SIZE=50m
+      - PROXY_READ_TIMEOUT=120
+      - UPSTREAM_REAL_IP_ADDRESS=0.0.0.0/0
+      - UPSTREAM_REAL_IP_HEADER=X-Forwarded-For
+    volumes:
+      - ./sites:/home/frappe/frappe-bench/sites
+      - ./apps.txt:/home/frappe/frappe-bench/apps.txt
+      - ./apps.txt:/home/frappe/frappe-bench/sites/apps.txt
+    networks:
+      - erp-net
+    depends_on:
+      - erp_backend
+      - erp_websocket
+
+  # ---------- AI 助手（MCP Server for ERPNext） ----------
+  # 包名：@casys/mcp-erpnext（不是 mcp-erpnext，后者在 npm 上不存在）
+  # 模式：--http --port=3012，常驻 HTTP 服务；若用 stdio 模式，容器启动后
+  #       会因为 stdin 关闭而立即退出（表现为 Up Less than a second）
+  # ERPNEXT_URL 走 erp_frontend:8080（Nginx 会自动带上站点标识头），
+  # 直连 erp_backend:8000 会因 Host 不匹配站点而报错。
+  erp_mcp:
+    image: docker.io/library/node:20-alpine
+    container_name: erp_mcp
+    restart: always
+    command: ["sh", "-c", "exec npx -y @casys/mcp-erpnext --http --port=3012"]
+    environment:
+      - ERPNEXT_URL=http://erp_frontend:8080
+      - ERPNEXT_API_KEY=${MCP_ERP_API_KEY:-}
+      - ERPNEXT_API_SECRET=${MCP_ERP_API_SECRET:-}
+    # 只绑本机，避免把带凭据的 MCP 服务暴露到公网。
+    # 若 AI 客户端在另一台机器上，改成 "3012:3012" 并自行用防火墙限制来源。
+    ports:
+      - "127.0.0.1:3012:3012"
+    networks:
+      - erp-net
+
+  # ===============================================================
+  # 以下 3 个服务当前【未启用】。你的部署缺少 worker / scheduler，
+  # 后果：后台任务（邮件、批量操作、导入导出）不执行；
+  #       定时任务（自动提醒、重复单据、自动备份）不执行。
+  # 启用方法：把下面各行的行首注释去掉，然后 podman-compose up -d
+  # ===============================================================
+  # erp_worker_short:
+  #   image: localhost/erpnext-cn:v15.32.0
+  #   container_name: erp_worker_short
+  #   restart: always
+  #   command: ["bench", "worker", "--queue", "short,default"]
+  #   environment:
+  #     - DB_TYPE=postgres
+  #     - DB_HOST=erp_postgres
+  #     - DB_PORT=5432
+  #     - REDIS_CACHE=redis://erp_redis_cache:6379
+  #     - REDIS_QUEUE=redis://erp_redis_queue:6379
+  #   volumes:
+  #     - ./sites:/home/frappe/frappe-bench/sites
+  #     - ./apps.txt:/home/frappe/frappe-bench/apps.txt
+  #     - ./apps.txt:/home/frappe/frappe-bench/sites/apps.txt
+  #   networks:
+  #     - erp-net
+  #   depends_on:
+  #     - erp_backend
+  #
+  # erp_worker_long:
+  #   image: localhost/erpnext-cn:v15.32.0
+  #   container_name: erp_worker_long
+  #   restart: always
+  #   command: ["bench", "worker", "--queue", "long"]
+  #   environment:
+  #     - DB_TYPE=postgres
+  #     - DB_HOST=erp_postgres
+  #     - DB_PORT=5432
+  #     - REDIS_CACHE=redis://erp_redis_cache:6379
+  #     - REDIS_QUEUE=redis://erp_redis_queue:6379
+  #   volumes:
+  #     - ./sites:/home/frappe/frappe-bench/sites
+  #     - ./apps.txt:/home/frappe/frappe-bench/apps.txt
+  #     - ./apps.txt:/home/frappe/frappe-bench/sites/apps.txt
+  #   networks:
+  #     - erp-net
+  #   depends_on:
+  #     - erp_backend
+  #
+  # erp_scheduler:
+  #   image: localhost/erpnext-cn:v15.32.0
+  #   container_name: erp_scheduler
+  #   restart: always
+  #   command: ["bench", "schedule"]
+  #   environment:
+  #     - DB_TYPE=postgres
+  #     - DB_HOST=erp_postgres
+  #     - DB_PORT=5432
+  #     - REDIS_CACHE=redis://erp_redis_cache:6379
+  #     - REDIS_QUEUE=redis://erp_redis_queue:6379
+  #   volumes:
+  #     - ./sites:/home/frappe/frappe-bench/sites
+  #     - ./apps.txt:/home/frappe/frappe-bench/apps.txt
+  #     - ./apps.txt:/home/frappe/frappe-bench/sites/apps.txt
+  #   networks:
+  #     - erp-net
+  #   depends_on:
+  #     - erp_backend
